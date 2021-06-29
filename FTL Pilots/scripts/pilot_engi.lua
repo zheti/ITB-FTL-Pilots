@@ -41,12 +41,83 @@ function lmn_Engi_Repair:RepairTrain(p2)
 	
 	local train = Board:GetPawn(mission.Train)
 	if train then
+        Board:RemovePawn(train)
+
+		if train:IsDead() then
+			train = PAWN_FACTORY:CreatePawn("Train_Damaged")
+		else
+			train = PAWN_FACTORY:CreatePawn("Train_Pawn")
+			mission.TrainStopped = false
+
+			mission.TurnLimit = mission.TurnLimit + 1
+		end
+
+		Board:AddPawn(train, mission.TrainLoc)
+
+		mission.Train = train:GetId()
+	end
+end
+
+-- original train repair by Lemonymous
+--[[function lmn_Engi_Repair:RepairTrain(p2)
+	local mission = GetCurrentMission()
+	
+	local train = Board:GetPawn(mission.Train)
+	if train then
 		Board:RemovePawn(train)
 		train = PAWN_FACTORY:CreatePawn("Train_Pawn")
 		Board:AddPawn(train, mission.TrainLoc)
 		
 		mission.Train = train:GetId()
 		mission.TrainStopped = false
+	end
+end--]]
+
+
+function lmn_Engi_Repair:RepairFiller(p2)
+	local mission = GetCurrentMission()
+	
+	local filler = Board:GetPawn(mission.Filler)
+	if filler then
+		Board:RemovePawn(filler)
+		filler = PAWN_FACTORY:CreatePawn("Filler_Pawn")
+		Board:AddPawn(filler, "filler")
+		
+		mission.Filler = filler:GetId()
+
+		mission.TurnLimit = mission.TurnLimit + 1
+	end
+end
+
+function lmn_Engi_Repair:RepairSatelliteRocket1(p2)
+	local mission = GetCurrentMission()
+	
+	local rocket = Board:GetPawn(mission.Satellites[1])
+	if rocket then
+		Board:RemovePawn(rocket)
+		new_rocket = PAWN_FACTORY:CreatePawn("SatelliteRocket")
+		Board:AddPawn(new_rocket, rocket:GetSpace())
+		new_rocket:SetPowered(false)
+		
+		mission.Satellites[1] = new_rocket:GetId()
+
+		mission.TurnLimit = mission.TurnLimit + 1
+	end
+end
+
+function lmn_Engi_Repair:RepairSatelliteRocket2(p2)
+	local mission = GetCurrentMission()
+	
+	local rocket = Board:GetPawn(mission.Satellites[2])
+	if rocket then
+		Board:RemovePawn(rocket)
+		new_rocket = PAWN_FACTORY:CreatePawn("SatelliteRocket")
+		Board:AddPawn(new_rocket, rocket:GetSpace())
+		new_rocket:SetPowered(false)
+		
+		mission.Satellites[2] = new_rocket:GetId()
+
+		mission.TurnLimit = mission.TurnLimit + 1
 	end
 end
 
@@ -60,7 +131,8 @@ function lmn_Engi_Repair:GetSkillEffect(p1, p2)
 	if id > 2 then
 		ret:AddSound("/ui/map/repair_mech")
 	end
-	
+
+	-- repair train
 	if
 		pawn				and
 		id == mission.Train	and
@@ -68,7 +140,35 @@ function lmn_Engi_Repair:GetSkillEffect(p1, p2)
 	then
 		ret:AddScript("lmn_Engi_Repair:RepairTrain(".. p2:GetString() ..")")
 	end
-	
+
+	-- repair filler aka earth mover
+	if
+		pawn					and
+		id == mission.Filler	and
+		not Board:IsPawnAlive(mission.Filler)
+	then
+		ret:AddScript("lmn_Engi_Repair:RepairFiller(".. p2:GetString() ..")")
+	end
+
+	-- repair satellite rocket
+	if
+		pawn						and
+		mission.Satellites			and
+		id == mission.Satellites[1]	and
+		not Board:IsPawnAlive(id)
+	then
+		ret:AddScript("lmn_Engi_Repair:RepairSatelliteRocket1(".. p2:GetString() ..")")
+	end
+
+	if
+		pawn						and
+		mission.Satellites			and
+		id == mission.Satellites[2]	and
+		not Board:IsPawnAlive(id)
+	then
+		ret:AddScript("lmn_Engi_Repair:RepairSatelliteRocket2(".. p2:GetString() ..")")
+	end
+
 	return ret
 end
 
